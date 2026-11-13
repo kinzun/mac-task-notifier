@@ -210,7 +210,7 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
 
 - (void)showLastMessage:(id)sender {
     [self dismissNotification:nil];
-    NSRect bounds = NSMakeRect(0, 0, 404, 104);
+    NSRect bounds = NSMakeRect(0, 0, 360, 112);
     NSPanel *panel = [[NotificationPanel alloc] initWithContentRect:bounds
         styleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel
         backing:NSBackingStoreBuffered defer:NO];
@@ -224,46 +224,39 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
     panel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorTransient | NSWindowCollectionBehaviorIgnoresCycle;
     [panel setAccessibilityLabel:@"任务通知"];
     NSVisualEffectView *surface = [[NSVisualEffectView alloc] initWithFrame:bounds];
-    surface.material = NSVisualEffectMaterialHUDWindow;
-    surface.appearance = [NSAppearance appearanceNamed:NSAppearanceNameVibrantDark];
+    surface.material = NSVisualEffectMaterialPopover;
     surface.blendingMode = NSVisualEffectBlendingModeBehindWindow;
     surface.state = NSVisualEffectStateActive;
-    surface.maskImage = NotificationMask(bounds.size, 44);
+    surface.maskImage = NotificationMask(bounds.size, 28);
     surface.wantsLayer = YES;
-    surface.layer.cornerRadius = 44;
-    surface.layer.borderWidth = 0.75;
-    surface.layer.borderColor = [NSColor colorWithRed:0.55 green:0.86 blue:1 alpha:0.22].CGColor;
+    surface.layer.cornerRadius = 28;
     surface.layer.masksToBounds = YES;
     panel.contentView = surface;
-    NSView *tint = [[NSView alloc] initWithFrame:bounds];
-    tint.wantsLayer = YES;
-    tint.layer.backgroundColor = [NSColor colorWithRed:0.015 green:0.03 blue:0.06 alpha:0.72].CGColor;
-    [surface addSubview:tint];
-    NSImageView *icon = [[NSImageView alloc] initWithFrame:NSMakeRect(18, 23, 58, 58)];
+    NSImageView *icon = [[NSImageView alloc] initWithFrame:NSMakeRect(16, 35, 42, 42)];
     icon.image = NSApp.applicationIconImage;
     icon.imageScaling = NSImageScaleProportionallyUpOrDown;
     [icon setAccessibilityElement:NO];
     NSTextField *title = [NSTextField labelWithString:self.lastTitle ?: @"尚未收到消息"];
-    title.font = [NSFont systemFontOfSize:15 weight:NSFontWeightSemibold];
+    title.font = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
     title.lineBreakMode = NSLineBreakByTruncatingTail;
     NSTextField *body = [NSTextField wrappingLabelWithString:self.lastMessage ?: @"任务完成时，会在这里告诉你。"];
     body.font = [NSFont systemFontOfSize:12];
     body.textColor = NSColor.secondaryLabelColor;
     body.maximumNumberOfLines = 2;
     body.lineBreakMode = NSLineBreakByWordWrapping;
-    title.frame = NSMakeRect(90, 60, 216, 21);
-    body.frame = NSMakeRect(90, 23, 280, 33);
+    title.frame = NSMakeRect(72, 67, 200, 20);
+    body.frame = NSMakeRect(72, 29, 252, 32);
     NSTextField *time = [NSTextField labelWithString:self.lastReceivedAt ?
         [NSDateFormatter localizedStringFromDate:self.lastReceivedAt dateStyle:NSDateFormatterNoStyle timeStyle:NSDateFormatterShortStyle] : @""];
     time.font = [NSFont monospacedDigitSystemFontOfSize:9 weight:NSFontWeightRegular];
     time.textColor = NSColor.tertiaryLabelColor;
     time.alignment = NSTextAlignmentRight;
-    time.frame = NSMakeRect(310, 64, 46, 12);
+    time.frame = NSMakeRect(277, 73, 42, 12);
     NSButton *close = [NSButton buttonWithImage:[NSImage imageWithSystemSymbolName:@"xmark" accessibilityDescription:@"关闭通知"] target:self action:@selector(dismissNotification:)];
     close.bordered = NO;
     close.contentTintColor = NSColor.secondaryLabelColor;
     close.imageScaling = NSImageScaleProportionallyDown;
-    close.frame = NSMakeRect(366, 59, 18, 18);
+    close.frame = NSMakeRect(326, 69, 18, 18);
     close.toolTip = @"关闭通知";
     [close setAccessibilityLabel:@"关闭通知"];
     for (NSView *view in @[icon, title, body, time, close]) [surface addSubview:view];

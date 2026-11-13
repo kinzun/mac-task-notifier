@@ -2,19 +2,14 @@
 
 static NSImage *NotificationStatusIcon(BOOL running) {
     NSImage *image = [NSImage imageWithSize:NSMakeSize(22, 18) flipped:NO drawingHandler:^BOOL(NSRect rect) {
+        NSImageSymbolConfiguration *configuration = [NSImageSymbolConfiguration configurationWithPointSize:15 weight:NSFontWeightRegular];
+        configuration = [configuration configurationByApplyingConfiguration:[NSImageSymbolConfiguration configurationWithPaletteColors:@[NSColor.blackColor]]];
+        NSImage *bell = [[NSImage imageWithSystemSymbolName:@"bell" accessibilityDescription:nil] imageWithSymbolConfiguration:configuration];
+        [bell drawInRect:NSMakeRect(1, 1, 14, 16)];
         NSGraphicsContext.currentContext.shouldAntialias = NO;
         [NSColor.blackColor setFill];
-        const char *rows[] = {
-            "000010000", "000111000", "001111100", "001111100", "001111100",
-            "011111110", "111111111", "000111000", "000010000"
-        };
-        for (NSUInteger y = 0; y < 9; y++) {
-            for (NSUInteger x = 0; x < 9; x++) {
-                if (rows[y][x] == '1') NSRectFill(NSMakeRect(x * 2, 16 - y * 2, 1.5, 1.5));
-            }
-        }
         if (running) {
-            NSRectFill(NSMakeRect(15, 13, 1.5, 1.5));
+            NSRectFill(NSMakeRect(16, 12, 1.5, 1.5));
             NSRectFill(NSMakeRect(18, 16, 1.5, 1.5));
         } else {
             NSRectFill(NSMakeRect(20, 8, 1.5, 6));

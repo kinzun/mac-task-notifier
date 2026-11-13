@@ -4,7 +4,7 @@
 
 int main(void) {
     @autoreleasepool {
-        NSImage *mask = NotificationMask(NSMakeSize(404, 104), 44);
+        NSImage *mask = NotificationMask(NSMakeSize(360, 112), 28);
         NSBitmapImageRep *pixels = [NSBitmapImageRep imageRepWithData:mask.TIFFRepresentation];
         NSInteger width = pixels.pixelsWide, height = pixels.pixelsHigh;
         assert([pixels colorAtX:0 y:0].alphaComponent == 0);
