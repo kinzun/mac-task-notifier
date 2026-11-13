@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+.build/
+*.app/
+*.zip
+receiver.json
+sender.json
+*.log
+__pycache__/

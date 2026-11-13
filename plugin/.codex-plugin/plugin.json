@@ -1,0 +1,10 @@
+{
+  "name": "mac-task-notifier",
+  "version": "0.2.0",
+  "description": "Send a fixed completion notification to your Mac when a Codex reply ends.",
+  "author": {
+    "name": "Local"
+  },
+  "license": "MIT",
+  "hooks": "./hooks/codex-hooks.json"
+}

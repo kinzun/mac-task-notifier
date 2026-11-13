@@ -1,0 +1,19 @@
+{
+  "description": "Send a fixed completion notice; never forward conversation contents.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/bin/sh \"$PLUGIN_ROOT/scripts/run-hook.sh\"",
+            "timeout": 3,
+            "async": true
+          }
+        ],
+        "description": "Notify your Mac after a Codex reply ends.",
+        "id": "mac-task-notifier-stop"
+      }
+    ]
+  }
+}
