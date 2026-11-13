@@ -17,7 +17,7 @@
     main { max-width:664px; margin:0 auto; padding:30px 28px 24px; }
     .app-bar { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:28px; }
     .brand { display:flex; align-items:center; gap:11px; font-size:16px; font-weight:600; letter-spacing:-.3px; }
-    .app-icon { display:grid; place-items:center; width:38px; height:38px; border-radius:10px; color:#fff; background:linear-gradient(155deg,#50a8ff,#006bef); box-shadow:inset 0 0 0 1px #ffffff25,0 2px 5px #007aff20; }
+    .app-icon { display:block; width:44px; height:44px; object-fit:contain; }
     .connection { display:inline-flex; align-items:center; gap:7px; font-size:11px; color:var(--secondary); white-space:nowrap; }
     .connection::before { content:""; width:6px; height:6px; background:#aaaab0; border-radius:50%; }
     .connection[data-state="ready"]::before { background:#34c759; }
@@ -55,7 +55,7 @@
   <main>
     <header class="app-bar">
       <div class="brand">
-        <span class="app-icon" aria-hidden="true"><svg width="23" height="23" viewBox="0 0 24 24" fill="none"><path d="M18 9a6 6 0 0 0-12 0c0 7-2 7-2 8h16c0-1-2-1-2-8Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 20a2.2 2.2 0 0 0 4 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        <img class="app-icon" src="/app-icon.png" alt="" width="44" height="44">
         <span>Mac 任务通知</span>
       </div>
       <span id="connection" class="connection" role="status" data-state="loading">正在连接</span>

@@ -29,18 +29,15 @@ shutil.copy2(node_license, resources / 'LICENSE.node')
 shutil.copy2(source / 'LICENSE', resources / 'LICENSE')
 with tempfile.TemporaryDirectory(prefix='mac-notifier-icon-') as temporary:
     temporary = Path(temporary)
-    builder = temporary / 'icon-builder'
-    png = temporary / 'icon.png'
+    png = source / 'public/app-icon.png'
     iconset = temporary / 'AppIcon.iconset'
     iconset.mkdir()
-    subprocess.run(['/usr/bin/clang', '-O2', '-fobjc-arc', str(source / 'mac/AppIcon.m'), '-framework', 'AppKit', '-o', str(builder)], check=True)
-    subprocess.run([str(builder), str(png)], check=True)
     for size in [16, 32, 128, 256, 512]:
         for scale in [1, 2]:
             filename = f'icon_{size}x{size}' + ('@2x' if scale == 2 else '') + '.png'
             subprocess.run(['/usr/bin/sips', '-z', str(size * scale), str(size * scale), str(png), '--out', str(iconset / filename)], check=True, stdout=subprocess.DEVNULL)
     subprocess.run(['/usr/bin/iconutil', '-c', 'icns', str(iconset), '-o', str(resources / 'AppIcon.icns')], check=True)
-for name in ['server.mjs', 'notification.applescript', 'public/index.html']:
+for name in ['server.mjs', 'notification.applescript', 'public/index.html', 'public/app-icon.png']:
     shutil.copy2(source / name, resources / 'service' / name)
 info = {
     'CFBundleIdentifier': 'local.mac-task-notifier',
@@ -48,8 +45,8 @@ info = {
     'CFBundleDisplayName': 'Mac 任务通知',
     'CFBundleExecutable': 'MacTaskNotifier',
     'CFBundlePackageType': 'APPL',
-    'CFBundleShortVersionString': '0.2.0',
-    'CFBundleVersion': '4',
+    'CFBundleShortVersionString': '0.2.1',
+    'CFBundleVersion': '5',
     'CFBundleIconFile': 'AppIcon',
     'LSMinimumSystemVersion': '13.0',
     'NSHighResolutionCapable': True,

@@ -12,6 +12,17 @@ import { createNotifierServer, loadToken, showNotification } from '../server.mjs
 
 const testToken = randomBytes(16).toString('hex');
 
+test('设置页使用真实 PNG 图标，图标仍限制本机访问', async t => {
+  const { url } = await fixture(t);
+  const response = await fetch(`${url}/app-icon.png`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /^image\/png/);
+  const png = Buffer.from(await response.arrayBuffer());
+  assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+  assert.match(await (await fetch(url)).text(), /<img[^>]+src="\/app-icon.png"/);
+  assert.equal((await fetch(`${url}/app-icon.png`, { headers: { Origin: 'https://evil.example' } })).status, 403);
+});
+
 async function fixture(t, notify = async () => {}, configDirectory) {
   const server = createNotifierServer({ token: testToken, notify, configDirectory });
   server.listen(0, '127.0.0.1');

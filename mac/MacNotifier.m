@@ -5,6 +5,12 @@
 static NSString *const ShowSettingsNotification = @"local.mac-task-notifier.show-settings";
 static NSString *const CompletionNotification = @"local.mac-task-notifier.completed";
 
+@interface NotificationPanel : NSPanel
+@end
+@implementation NotificationPanel
+- (BOOL)canBecomeKeyWindow { return YES; }
+@end
+
 static void DeliverNotification(NSString *title, NSString *message, void (^completion)(NSError *)) {
     UNUserNotificationCenter *center = UNUserNotificationCenter.currentNotificationCenter;
     [center getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings *settings) {
@@ -33,17 +39,24 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
 @property NSString *lastError;
 @property BOOL ready;
 @property BOOL quitting;
-@property NSPopover *popover;
-@property NSTimer *popoverTimer;
+@property NSPanel *notificationPanel;
+@property NSTimer *notificationTimer;
+@property id outsideClickMonitor;
+@property id localEventMonitor;
 @property NSString *lastTitle;
 @property NSString *lastMessage;
+@property NSDate *lastReceivedAt;
 @end
 
 @implementation MacNotifierDelegate
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
+    NSApp.applicationIconImage = [[NSImage alloc] initWithContentsOfURL:[NSBundle.mainBundle URLForResource:@"AppIcon" withExtension:@"icns"]];
     NSMenu *main = [NSMenu new];
     NSMenuItem *app = [NSMenuItem new];
     app.submenu = [NSMenu new];
+    NSMenuItem *recentMessage = [app.submenu addItemWithTitle:@"查看最近消息" action:@selector(showLastMessage:) keyEquivalent:@""];
+    recentMessage.target = self;
+    [app.submenu addItem:NSMenuItem.separatorItem];
     [app.submenu addItemWithTitle:@"退出 Mac 任务通知" action:@selector(terminate:) keyEquivalent:@"q"];
     [main addItem:app];
     NSMenuItem *edit = [NSMenuItem new];
@@ -181,43 +194,101 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
     dispatch_async(dispatch_get_main_queue(), ^{
         self.lastTitle = [data[@"title"] substringToIndex:MIN(120, [data[@"title"] length])];
         self.lastMessage = [data[@"message"] substringToIndex:MIN(1000, [data[@"message"] length])];
+        self.lastReceivedAt = NSDate.date;
         [self showLastMessage:nil];
     });
 }
 
+- (void)dismissNotification:(id)sender {
+    [self.notificationTimer invalidate];
+    [self.notificationPanel orderOut:nil];
+    if (self.outsideClickMonitor) [NSEvent removeMonitor:self.outsideClickMonitor];
+    if (self.localEventMonitor) [NSEvent removeMonitor:self.localEventMonitor];
+    self.outsideClickMonitor = nil;
+    self.localEventMonitor = nil;
+}
+
 - (void)showLastMessage:(id)sender {
-    [self.popoverTimer invalidate];
-    [self.popover close];
-    NSViewController *controller = [NSViewController new];
-    controller.view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 340, 120)];
-    NSImageView *icon = [[NSImageView alloc] initWithFrame:NSMakeRect(14, 65, 38, 38)];
+    [self dismissNotification:nil];
+    NSRect bounds = NSMakeRect(0, 0, 364, 128);
+    NSPanel *panel = [[NotificationPanel alloc] initWithContentRect:bounds
+        styleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel
+        backing:NSBackingStoreBuffered defer:NO];
+    panel.releasedWhenClosed = NO;
+    panel.title = @"任务通知";
+    panel.backgroundColor = NSColor.clearColor;
+    panel.opaque = NO;
+    panel.hasShadow = YES;
+    panel.hidesOnDeactivate = NO;
+    panel.level = NSStatusWindowLevel;
+    panel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorTransient | NSWindowCollectionBehaviorIgnoresCycle;
+    [panel setAccessibilityLabel:@"任务通知"];
+    NSVisualEffectView *surface = [[NSVisualEffectView alloc] initWithFrame:bounds];
+    surface.material = NSVisualEffectMaterialPopover;
+    surface.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+    surface.state = NSVisualEffectStateActive;
+    surface.wantsLayer = YES;
+    surface.layer.cornerRadius = 20;
+    surface.layer.masksToBounds = YES;
+    panel.contentView = surface;
+    NSImageView *icon = [[NSImageView alloc] initWithFrame:NSMakeRect(15, 49, 46, 46)];
     icon.image = NSApp.applicationIconImage;
+    icon.imageScaling = NSImageScaleProportionallyUpOrDown;
+    [icon setAccessibilityElement:NO];
     NSTextField *caption = [NSTextField labelWithString:@"Mac 任务通知"];
     caption.font = [NSFont systemFontOfSize:11 weight:NSFontWeightMedium];
     caption.textColor = NSColor.secondaryLabelColor;
     NSTextField *title = [NSTextField labelWithString:self.lastTitle ?: @"尚未收到消息"];
-    title.font = [NSFont systemFontOfSize:15 weight:NSFontWeightSemibold];
+    title.font = [NSFont systemFontOfSize:14 weight:NSFontWeightSemibold];
     title.lineBreakMode = NSLineBreakByTruncatingTail;
     NSTextField *body = [NSTextField wrappingLabelWithString:self.lastMessage ?: @"任务完成时，会在这里告诉你。"];
     body.font = [NSFont systemFontOfSize:13];
-    body.textColor = NSColor.secondaryLabelColor;
-    body.maximumNumberOfLines = 3;
+    body.textColor = NSColor.labelColor;
+    body.maximumNumberOfLines = 2;
     body.lineBreakMode = NSLineBreakByTruncatingTail;
-    caption.frame = NSMakeRect(62, 88, 260, 15);
-    title.frame = NSMakeRect(62, 60, 260, 22);
-    body.frame = NSMakeRect(62, 15, 260, 40);
-    [controller.view addSubview:icon];
-    [controller.view addSubview:caption];
-    [controller.view addSubview:title];
-    [controller.view addSubview:body];
-    self.popover = [NSPopover new];
-    self.popover.contentViewController = controller;
-    self.popover.contentSize = NSMakeSize(340, 120);
-    self.popover.behavior = NSPopoverBehaviorTransient;
-    self.popover.animates = YES;
-    [self.popover showRelativeToRect:self.statusItem.button.bounds ofView:self.statusItem.button preferredEdge:NSRectEdgeMinY];
+    caption.frame = NSMakeRect(73, 96, 176, 15);
+    title.frame = NSMakeRect(73, 70, 270, 20);
+    body.frame = NSMakeRect(73, 24, 270, 40);
+    NSTextField *time = [NSTextField labelWithString:self.lastReceivedAt ?
+        [NSDateFormatter localizedStringFromDate:self.lastReceivedAt dateStyle:NSDateFormatterNoStyle timeStyle:NSDateFormatterShortStyle] : @""];
+    time.font = [NSFont systemFontOfSize:10];
+    time.textColor = NSColor.tertiaryLabelColor;
+    time.alignment = NSTextAlignmentRight;
+    time.frame = NSMakeRect(253, 97, 62, 13);
+    NSButton *close = [NSButton buttonWithImage:[NSImage imageWithSystemSymbolName:@"xmark" accessibilityDescription:@"关闭通知"] target:self action:@selector(dismissNotification:)];
+    close.bordered = NO;
+    close.contentTintColor = NSColor.secondaryLabelColor;
+    close.imageScaling = NSImageScaleProportionallyDown;
+    close.frame = NSMakeRect(328, 94, 20, 20);
+    close.toolTip = @"关闭通知";
+    [close setAccessibilityLabel:@"关闭通知"];
+    for (NSView *view in @[icon, caption, title, body, time, close]) [surface addSubview:view];
+
+    NSScreen *screen = self.statusItem.button.window.screen ?: NSScreen.mainScreen;
+    NSRect available = screen.visibleFrame;
+    NSRect anchor = [self.statusItem.button.window convertRectToScreen:[self.statusItem.button convertRect:self.statusItem.button.bounds toView:nil]];
+    CGFloat x = MIN(MAX(NSMidX(anchor) - bounds.size.width / 2, NSMinX(available) + 12), NSMaxX(available) - bounds.size.width - 12);
+    [panel setFrameOrigin:NSMakePoint(x, NSMaxY(available) - bounds.size.height - 10)];
+    self.notificationPanel = panel;
+    BOOL reduceMotion = NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+    panel.alphaValue = reduceMotion ? 1 : 0;
+    [panel orderFrontRegardless];
+    if (sender) [panel makeKeyAndOrderFront:nil];
+    if (!reduceMotion) [NSAnimationContext runAnimationGroup:^(NSAnimationContext *context) {
+        context.duration = 0.18;
+        panel.animator.alphaValue = 1;
+    } completionHandler:nil];
     __weak MacNotifierDelegate *weakSelf = self;
-    self.popoverTimer = [NSTimer scheduledTimerWithTimeInterval:6 repeats:NO block:^(NSTimer *timer) { [weakSelf.popover close]; }];
+    self.outsideClickMonitor = [NSEvent addGlobalMonitorForEventsMatchingMask:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown handler:^(NSEvent *event) {
+        [weakSelf dismissNotification:nil];
+    }];
+    self.localEventMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskLeftMouseDown | NSEventMaskRightMouseDown | NSEventMaskKeyDown handler:^NSEvent *(NSEvent *event) {
+        if (event.type == NSEventTypeKeyDown) {
+            if (event.keyCode == 53) [weakSelf dismissNotification:nil];
+        } else if (event.window != weakSelf.notificationPanel) [weakSelf dismissNotification:nil];
+        return event;
+    }];
+    self.notificationTimer = [NSTimer scheduledTimerWithTimeInterval:6 repeats:NO block:^(NSTimer *timer) { [weakSelf dismissNotification:nil]; }];
 }
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completion {
@@ -232,6 +303,7 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
 
 - (void)applicationWillTerminate:(NSNotification *)notification {
     self.quitting = YES;
+    [self dismissNotification:nil];
     self.output.fileHandleForReading.readabilityHandler = nil;
     self.errors.fileHandleForReading.readabilityHandler = nil;
     if (self.service.running) { [self.service terminate]; [self.service waitUntilExit]; }

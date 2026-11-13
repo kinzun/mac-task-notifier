@@ -66,7 +66,7 @@ export function createNotifierServer({ token, notify = showNotification, configD
       response.end(JSON.stringify(value));
     };
     if (request.method === 'GET' && request.url === '/health') return send(200, { ok: true });
-    if ((request.method === 'GET' && ['/', '/api/config'].includes(request.url)) ||
+    if ((request.method === 'GET' && ['/', '/api/config', '/app-icon.png'].includes(request.url)) ||
       (request.method === 'POST' && request.url === '/api/connect')) {
       const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.socket.remoteAddress);
       const host = request.headers.host;
@@ -96,12 +96,13 @@ export function createNotifierServer({ token, notify = showNotification, configD
         return send(200, { ok: true });
       }
       try {
-        const html = await readFile(join(directory, 'public/index.html'));
+        const icon = request.url === '/app-icon.png';
+        const content = await readFile(join(directory, icon ? 'public/app-icon.png' : 'public/index.html'));
         response.writeHead(200, {
-          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Type': icon ? 'image/png' : 'text/html; charset=utf-8',
           'Content-Security-Policy': "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'",
         });
-        return response.end(html);
+        return response.end(content);
       } catch { return send(500, { error: '无法读取测试页' }); }
     }
     if (request.method !== 'POST' || request.url !== '/notify') return send(404, { error: '地址不存在' });

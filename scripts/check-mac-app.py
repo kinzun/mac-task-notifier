@@ -19,7 +19,7 @@ assert int(version.lstrip('v').split('.')[0]) >= 20
 assert (resources / 'LICENSE.node').is_file()
 assert (resources / 'LICENSE').is_file()
 assert (resources / 'AppIcon.icns').is_file()
-for name in ['server.mjs', 'notification.applescript', 'public/index.html']:
+for name in ['server.mjs', 'notification.applescript', 'public/index.html', 'public/app-icon.png']:
     assert (resources / 'service' / name).read_bytes() == (source / name).read_bytes()
 assert not list(app.rglob('receiver.json'))
 assert not list(app.rglob('sender.json'))
