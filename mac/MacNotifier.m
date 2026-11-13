@@ -1,6 +1,8 @@
 #import <AppKit/AppKit.h>
 #import <WebKit/WebKit.h>
 #import <UserNotifications/UserNotifications.h>
+#import "StatusIcon.h"
+#import "NotificationMask.h"
 
 static NSString *const ShowSettingsNotification = @"local.mac-task-notifier.show-settings";
 static NSString *const CompletionNotification = @"local.mac-task-notifier.completed";
@@ -116,9 +118,7 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
     self.ready = running;
     self.statusText.title = message;
     self.retryItem.hidden = running;
-    NSImage *image = [NSImage imageWithSystemSymbolName:running ? @"bell.fill" : @"bell.badge" accessibilityDescription:@"Mac 任务通知"];
-    image.template = YES;
-    self.statusItem.button.image = image;
+    self.statusItem.button.image = NotificationStatusIcon(running);
 }
 
 - (void)startService:(id)sender {
@@ -228,6 +228,7 @@ static void DeliverNotification(NSString *title, NSString *message, void (^compl
     surface.appearance = [NSAppearance appearanceNamed:NSAppearanceNameVibrantDark];
     surface.blendingMode = NSVisualEffectBlendingModeBehindWindow;
     surface.state = NSVisualEffectStateActive;
+    surface.maskImage = NotificationMask(bounds.size, 44);
     surface.wantsLayer = YES;
     surface.layer.cornerRadius = 44;
     surface.layer.borderWidth = 0.75;

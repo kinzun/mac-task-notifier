@@ -12,6 +12,8 @@
 
 0.2.2 将提醒改为更圆润的紧凑胶囊，图标改为青蓝色发光马赛克铃铛，并修正两行消息换行。图标原图在 `public/app-icon.png`，生成提示词在 `mac/icon-prompt.txt`。
 
+0.2.3 同步了单色马赛克菜单栏图标，并给原生毛玻璃材质添加透明圆角遮罩，消除圆角外的矩形底色。
+
 ![通知卡片实机截图](docs/notification.png)
 
 关闭设置窗口会继续后台接收；只有菜单里的“退出 Mac 任务通知”或 ⌘Q 才停止。重复打开不同目录副本不会启动第二个接收服务。
@@ -71,6 +73,7 @@ python3 scripts/check-mac-app.py
 
 ```bash
 npm run test:coverage
+python3 scripts/check-native-ui.py
 python3 scripts/check-running-app.py
 ```
 
